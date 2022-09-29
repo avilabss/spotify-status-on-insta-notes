@@ -12,7 +12,16 @@ class ResponseError(Exception):
     pass
 
 class InstaClient(Client):
-    def create_note(self, note: str):
+    """
+    Extending features of instagrapi client to support notes related endpoints.
+    """
+
+    def create_note(self, note: str) -> None:
+        """
+        Create or update note.
+        :param note: Note text.
+        """
+
         uuid = self.uuid
         note = note.replace(" ", "+")
 
@@ -22,6 +31,10 @@ class InstaClient(Client):
 
 
 def get_currently_playing() -> dict:
+    """
+    Get what's currently playing on your spotify.
+    """
+
     url = "https://api.spotify.com/v1/me/player/currently-playing?market=IN"
 
     headers = {
@@ -46,6 +59,12 @@ def get_currently_playing() -> dict:
 
 
 def make_note(json_data: dict) -> str:
+    """
+    Create a note by pasing spotify response.
+    :param json_data: Spotify response data.
+    :return: Note of usefull info.
+    """
+
     default_text = "Playing nothing..."
     note_text = ""
 
@@ -71,12 +90,19 @@ def make_note(json_data: dict) -> str:
     note_text += f"on {album_name}\n"
     note_text.strip()
 
-    
+    note_text += "\n\n"
+    note_text += "Live Spotify status feature by\n"
+    note_text += "https://github.com/git-avilabs/spotify-status-on-insta-notes"
 
     return note_text
 
 
-def main_loop(client: InstaClient):
+def main_loop(client: InstaClient) -> None:
+    """
+    Loop forever updating notes with what you are listning with a delay
+    :param client: Modified client with extra features
+    """
+
     while True:
         note = make_note(get_currently_playing())
         client.create_note(note)
