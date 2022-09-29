@@ -71,6 +71,8 @@ def make_note(json_data: dict) -> str:
     note_text += f"on {album_name}\n"
     note_text.strip()
 
+    
+
     return note_text
 
 
