@@ -16,6 +16,24 @@ class InstaClient(Client):
     Extending features of instagrapi client to support notes related endpoints.
     """
 
+    def _get_my_note_id(self) -> int:
+        """
+        Fetch notes
+        """
+        notes = self.private_request("notes/get_notes/")
+        items = notes["items"]
+
+        if len(items) == 0:
+            return None
+
+        first_note_id = items[0]["id"]
+        first_user_id = items[0]["user_id"]
+
+        if first_user_id != self.user_id:
+            return None
+
+        return first_note_id
+
     def create_note(self, note: str) -> None:
         """
         Create or update note.
@@ -24,10 +42,21 @@ class InstaClient(Client):
 
         uuid = self.uuid
         note = note.replace(" ", "+")
-
         data = "text={}&_uuid={}&audience=0".format(note, uuid)
-
         self.private_request("notes/create_note/", data, with_signature=False)
+
+    def delete_my_note(self) -> None:
+        """
+        Delete note
+        """
+
+        uuid = self.uuid
+        note_id = self._get_my_note_id()
+
+        if note_id:
+            print(f"Deleting note id: {note_id}")
+            data = "id={}&_uuid={}".format(note_id, uuid)
+            self.private_request("notes/delete_note/", data, with_signature=False)
 
 
 def get_currently_playing() -> dict:
@@ -65,11 +94,10 @@ def make_note(json_data: dict) -> str:
     :return: Note of usefull info.
     """
 
-    default_text = "Playing nothing..."
     note_text = ""
 
     if not json_data:
-        return default_text
+        return None
 
     playing_status = json_data["is_playing"]
     song_name = json_data["item"]["name"]
@@ -82,7 +110,7 @@ def make_note(json_data: dict) -> str:
         artist_names.append(artist_name) 
 
     if not playing_status:
-        return default_text
+        return None
 
     note_text += f"Listening to spotify\n\n"
     note_text += f"{song_name}\n"
@@ -105,6 +133,13 @@ def main_loop(client: InstaClient) -> None:
 
     while True:
         note = make_note(get_currently_playing())
+
+        if note is None:
+            print("Nothing is playing, so no notes to be added")
+            client.delete_my_note()
+            time.sleep(int(config.get("settings", "loop-delay")))
+            continue
+
         client.create_note(note)
         print("Note updated!")
 
